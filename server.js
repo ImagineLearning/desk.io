@@ -1,6 +1,8 @@
 var logger = require('simple-node-logger').createSimpleLogger('desk.io.log');
 var net = require('net');
 var _ = require('underscore');
+var deskService = require('./deskService');
+
 
 var sockets = [];
 var commands = {
@@ -30,7 +32,8 @@ function onSocketData(data) {
 	var commandArray = commandString.split(/[ \t\r\n]/);
 	// logger.info('processing command array: ' + commandArray.join(' '));
 	var command = commandArray.shift();
-	_(commands).chain().keys().contains(command).value() && commands[command].apply(this, commandArray);
+	var secondsString = commandArray.shift();
+	_(commands).chain().keys().contains(command).value() && commands[command].call(this, secondsString);
 }
 
 function onSocketEnd() {
@@ -44,11 +47,10 @@ function onSocketEnd() {
 	}
 }
 
-function onExitCommand(args) {
+function onExitCommand(secondsString) {
 	logger.info('EXIT');
 	var idx = sockets.indexOf(this);
 	if (idx != -1) {
-		logger.info('destroyed');
 		sockets[idx].destroy();
 		delete sockets[idx];
 	}
@@ -57,16 +59,32 @@ function onExitCommand(args) {
 	}
 }
 
-function onUpCommand(args) {
-	logger.info('SENDING UP ');
+function onUpCommand(secondsString) {
+	logger.info('SENDING UP ' + secondsString);
+	deskService.raiseDesk();
+	sendStopAfter(secondsString);
 }
 
-function onDownCommand(args) {
-	logger.info('SENDING DOWN ');
+function onDownCommand(secondsString) {
+	logger.info('SENDING DOWN ' + secondsString);
+	deskService.lowerDesk();
+	sendStopAfter(secondsString);
 }
 
-function onStopCommand(args) {
-	logger.info('SENDING STOP ');
+function onStopCommand(secondsString) {
+	logger.info('SENDING STOP ' + secondsString);
+	deskService.stopDesk();
+}
+
+function sendStopAfter(secondsString) {
+	if(secondsString) {
+		var ms = parseInt(secondsString[0])*1000;
+		if(isNaN(ms)) return;
+		setTimeout(function() {
+			logger.info('SENDING STOP after: ' + ms + '');
+			deskService.stopDesk();
+		}, ms);
+	}
 }
 
 var svraddr = '0.0.0.0';
