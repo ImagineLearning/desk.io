@@ -20,6 +20,7 @@
   "dependencies": {
     "net": "^1.0.2",
     "pi-gpio": "0.0.7",
+    "python-shell": "^0.1.0",
     "simple-node-logger": "^0.92.21",
     "underscore": "^1.8.3"
   }
